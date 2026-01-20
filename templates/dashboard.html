@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+    body { background: #f0f2f5; font-family: 'Roboto', sans-serif; }
+
+    /* --- WELCOME BANNER --- */
+    .dashboard-header {
+        background: linear-gradient(135deg, #001529 0%, #003554 100%);
+        color: white;
+        padding: 40px 30px;
+        border-radius: 0 0 30px 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .welcome-text h1 {
+        font-family: 'Oswald', sans-serif;
+        font-size: 2.5rem; margin: 0; text-transform: uppercase; letter-spacing: 1px;
+    }
+    .welcome-text span { color: #00a8ff; }
+    .role-badge {
+        background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 50px;
+        font-size: 0.8rem; text-transform: uppercase; font-weight: 700; letter-spacing: 1px;
+        border: 1px solid rgba(255,255,255,0.2); display: inline-block; margin-top: 10px;
+    }
+
+    /* --- TAB SYSTEM --- */
+    .tab-container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+    
+    .tabs { display: flex; gap: 15px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; }
+    
+    .tab-btn {
+        padding: 12px 25px; border: none; background: transparent;
+        font-weight: 700; color: #64748b; cursor: pointer;
+        font-size: 1rem; border-bottom: 3px solid transparent; transition: 0.3s;
+        text-transform: uppercase; font-family: 'Oswald';
+    }
+
+    .tab-btn:hover { color: #003554; }
+    .tab-btn.active { color: #00a8ff; border-bottom-color: #00a8ff; }
+
+    .tab-content { display: none; animation: fadeIn 0.4s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* --- CARD STYLES --- */
+    .admin-card { background: white; border-radius: 15px; padding: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+
+    /* Forms */
+    .form-group { margin-bottom: 20px; }
+    .form-label { display: block; font-weight: 700; margin-bottom: 8px; color: #334155; font-size: 0.9rem; }
+    .form-control {
+        width: 100%; padding: 12px; border: 1px solid #cbd5e1;
+        border-radius: 8px; font-size: 1rem; background: #f8fafc;
+    }
+    .btn-primary {
+        background: #00a8ff; color: white; border: none; width: 100%;
+        padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase;
+    }
+
+    /* Table */
+    .user-table { width: 100%; border-collapse: collapse; }
+    .user-table th { text-align: left; padding: 15px; background: #f1f5f9; color: #475569; }
+    .user-table td { padding: 15px; border-bottom: 1px solid #e2e8f0; }
+    .role-tag {
+        padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    }
+    .tag-super { background: #fee2e2; color: #991b1b; }
+    .tag-admin { background: #e0f2fe; color: #075985; }
+    .tag-captain { background: #dcfce7; color: #166534; }
+
+</style>
+
+<div class="dashboard-header">
+    <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+        <div class="welcome-text">
+            <h1>Welcome Back, <span>{{ session.get('username') }}</span>!</h1>
+            <div class="role-badge">
+                <i class="fa fa-shield-alt"></i> {{ session.get('user_role').replace('_', ' ') }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="tab-container">
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div style="padding: 15px; border-radius: 8px; margin-bottom: 20px; background: #dcfce7; color: #166534; font-weight: 600;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="tabs">
+        {% if session.get('user_role') == 'super_admin' %}
+            <button class="tab-btn active" onclick="openTab(event, 'createUsers')">Create User</button>
+            <button class="tab-btn" onclick="openTab(event, 'manageUsers')">Manage Users</button>
+        {% endif %}
+        <button class="tab-btn {% if session.get('user_role') != 'super_admin' %}active{% endif %}" onclick="openTab(event, 'activityLogs')">Activity Logs</button>
+    </div>
+
+    {% if session.get('user_role') == 'super_admin' %}
+    <div id="createUsers" class="tab-content active">
+        <div class="admin-card" style="max-width: 600px;">
+            <h3 style="margin-top: 0; color: #003554;">Add New Admin/Captain</h3>
+            <form action="{{ url_for('create_user_action') }}" method="POST">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" name="new_username" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" name="new_password" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Role</label>
+                    <select name="role" id="roleSelect" class="form-control" onchange="toggleTeam()" required>
+                        <option value="admin">Admin</option>
+                        <option value="super_admin">Super Admin</option>
+                        <option value="captain">Captain</option>
+                    </select>
+                </div>
+                <div class="form-group" id="teamField" style="display:none;">
+                    <label class="form-label">Team Name</label>
+                    <select name="team_name" class="form-control">
+                        <option value="" disabled selected>Select Team</option>
+                        <option value="Royal Strikers">Royal Strikers</option>
+                        <option value="Kings XI">Kings XI</option>
+                        <option value="Chennai Super Kings">Chennai Super Kings</option>
+                        <option value="Mumbai Indians">Mumbai Indians</option>
+                        <option value="Gujarat Titans">Gujarat Titans</option>
+                        <option value="Delhi Capitals">Delhi Capitals</option>
+                        <option value="Rajasthan Royals">Rajasthan Royals</option>
+                        <option value="Kolkata Knight Riders">Kolkata Knight Riders</option>
+                        <option value="Sunrisers Hyderabad">Sunrisers Hyderabad</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary">Create Account</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="manageUsers" class="tab-content">
+        <div class="admin-card">
+            <h3 style="margin-top: 0; color: #003554;">Existing Accounts</h3>
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Team (If Captain)</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td style="font-weight: 600;">{{ user.username }}</td>
+                        <td>
+                            <span class="role-tag {% if user.role == 'super_admin' %}tag-super{% elif user.role == 'admin' %}tag-admin{% else %}tag-captain{% endif %}">
+                                {{ user.role }}
+                            </span>
+                        </td>
+                        <td>{{ user.team if user.team else '-' }}</td>
+                        <td>
+                            {% if user.username != 'admin' %} 
+                                <form action="{{ url_for('delete_user', id=user.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                                    <button type="submit" style="background: none; border: none; color: #ef4444; font-weight: 700; font-size: 0.8rem; cursor: pointer;">DELETE</button>
+                                </form>
+                            {% else %}
+                                <span style="color: #cbd5e1; font-size: 0.8rem;">PROTECTED</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <div id="activityLogs" class="tab-content {% if session.get('user_role') != 'super_admin' %}active{% endif %}">
+        <div class="admin-card">
+            <h3 style="margin-top: 0; color: #003554;">System Activity</h3>
+            <div style="color: #64748b; font-style: italic;">
+                {% if logs|length == 0 %}
+                    No activity recorded yet.
+                {% else %}
+                    <table class="user-table">
+                        <thead><tr><th>Time</th><th>User</th><th>Action</th></tr></thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td>{{ log.timestamp }}</td>
+                                <td>{{ log.username }}</td> <td>{{ log.action }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+            tabcontent[i].classList.remove("active");
+        }
+        
+        tablinks = document.getElementsByClassName("tab-btn");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        
+        document.getElementById(tabName).style.display = "block";
+        document.getElementById(tabName).classList.add("active");
+        evt.currentTarget.className += " active";
+    }
+
+    function toggleTeam() {
+        var role = document.getElementById("roleSelect").value;
+        var field = document.getElementById("teamField");
+        if(role === 'captain') {
+            field.style.display = "block";
+        } else {
+            field.style.display = "none";
+        }
+    }
+</script>
+
+{% endblock %}

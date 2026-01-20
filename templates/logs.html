@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 800px; margin: 40px auto; padding: 20px; background: white; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);">
+    <h2 style="font-family: 'Oswald'; color: #003554;">Manage Committee Members</h2>
+    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <tr style="background: #f8fafc; text-align: left;">
+            <th style="padding: 12px;">Username</th>
+            <th>Role</th>
+            <th>Action</th>
+        </tr>
+        {% for user in users %}
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 12px; font-weight: bold;">{{ user.username }}</td>
+            <td>{{ user.role }}</td>
+            <td>
+                {% if user.username != 'admin' %}
+                <form action="{{ url_for('delete_user', id=user.id) }}" method="POST">
+                    <button type="submit" style="background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Delete</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

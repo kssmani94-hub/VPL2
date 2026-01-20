@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+{% block content %}
+
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+<style>
+    /* --- CSS STYLES --- */
+    body { background-color: #f4f6f9; font-family: 'Roboto', sans-serif; }
+
+    /* Banner */
+    .performance-banner {
+        background-color: #001529;
+        padding: 30px 50px;
+        border-radius: 0 0 20px 20px;
+        margin-bottom: 25px;
+        color: white;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .page-title {
+        font-family: 'Oswald', sans-serif;
+        font-size: 3rem; font-weight: 700;
+        text-transform: uppercase; line-height: 1;
+    }
+    .page-title span { color: #00a8ff; }
+
+    /* Toolbar */
+    .toolbar-container {
+        max-width: 1400px; margin: 0 auto 20px auto; padding: 0 20px;
+        display: flex; gap: 15px; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    }
+
+    .filter-group { display: flex; gap: 10px; flex-wrap: wrap; flex: 1; }
+
+    .control-input {
+        padding: 10px 15px;
+        border-radius: 8px; border: 1px solid #cbd5e1;
+        background: white; font-size: 0.9rem; font-weight: 500;
+        min-width: 160px;
+    }
+    .control-input:focus { border-color: #00a8ff; outline: none; }
+
+    /* Export Button */
+    .btn-export {
+        background: #10b981; color: white; border: none;
+        padding: 10px 20px; border-radius: 8px; font-weight: 700;
+        cursor: pointer; display: flex; align-items: center; gap: 8px;
+        transition: 0.2s;
+    }
+    .btn-export:hover { background: #059669; transform: translateY(-1px); }
+
+    /* Table */
+    .table-container { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
+    
+    .custom-table {
+        width: 100%; border-collapse: separate; border-spacing: 0;
+        background: white; border-radius: 12px; overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .custom-table tbody tr { border-bottom: 1px solid #e2e8f0; }
+    .custom-table tbody tr:hover { background-color: #f8fafc; }
+    .custom-table tbody td { padding: 12px 15px; vertical-align: middle; border-bottom: 1px solid #f1f5f9; }
+
+    .player-img { width: 45px; height: 45px; border-radius: 6px; object-fit: cover; object-position: top; border: 1px solid #ddd; margin-right: 12px; }
+    
+    /* --- NEW WISHLIST STYLES --- */
+    .wishlist-btn {
+        background: none; border: none; cursor: pointer;
+        font-size: 1.4rem; color: #cbd5e1; /* Grey by default */
+        transition: 0.2s; padding: 0;
+    }
+    .wishlist-btn:hover { transform: scale(1.2); }
+    .wishlist-btn.active { color: #ffb703; text-shadow: 0 0 5px rgba(255, 183, 3, 0.4); }
+
+    /* Highlight Row Style */
+    tr.wishlisted-row { background-color: #fffbeb !important; }
+    tr.wishlisted-row td { border-bottom-color: #fcd34d; }
+</style>
+
+<div class="performance-banner">
+    <div>
+        <div style="color: #00a8ff; font-weight: 700; letter-spacing: 1px;">VPL 2026</div>
+        <div class="page-title">PLAYER <span>ANALYTICS</span></div>
+    </div>
+</div>
+
+<div class="toolbar-container">
+    <div class="filter-group">
+        <input type="text" id="searchInput" class="control-input" placeholder="🔍 Search Name or ID..." onkeyup="applyFilters()">
+        
+        <select id="levelFilter" class="control-input" onchange="applyFilters()">
+            <option value="all">All Levels</option>
+            <option value="Club">Club Level</option>
+            <option value="District_State">District/State Level</option>
+        </select>
+
+        <select id="roleFilter" class="control-input" onchange="applyFilters()">
+            <option value="all">All Roles</option>
+            <option value="Batsman">Batsman</option>
+            <option value="Bowler">Bowler</option>
+            <option value="All-Rounder">All Rounder</option>
+            <option value="Wicket-Keeper">Wicket Keeper</option>
+        </select>
+
+        {% if current_user.is_authenticated and current_user.role == 'captain' %}
+        <select id="wishlistFilter" class="control-input" style="border-color: #ffb703; background:#fffdf5;" onchange="applyFilters()">
+            <option value="all">Show All Players</option>
+            <option value="wishlist">★ Show Wishlist Only</option>
+        </select>
+        {% endif %}
+    </div>
+
+    <button onclick="exportToExcel()" class="btn-export">
+        <i class="fa fa-file-excel"></i> Export Excel
+    </button>
+</div>
+
+<div class="table-container">
+    <div class="table-responsive">
+        <table class="custom-table" id="statsTable">
+            <thead>
+                <tr style="color: white; font-family: 'Oswald', sans-serif; text-transform: uppercase;">
+                    <th rowspan="2" style="background-color: #001529 !important; width: 60px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1);">
+                        {% if current_user.role == 'captain' %}★{% else %}#{% endif %}
+                    </th>
+                    <th rowspan="2" onclick="sortTable(1)" style="background-color: #001529 !important; width: 100px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); cursor: pointer;">ID</th>
+                    <th rowspan="2" onclick="sortTable(2)" style="background-color: #001529 !important; width: 250px; text-align: left; padding-left: 15px; border-right: 1px solid rgba(255,255,255,0.1); cursor: pointer;">PLAYER</th>
+                    <th rowspan="2" onclick="sortTable(3)" style="background-color: #001529 !important; width: 150px; text-align: left; padding-left: 15px; border-right: 1px solid rgba(255,255,255,0.1); cursor: pointer;">ROLE</th>
+                    
+                    <th colspan="3" style="background-color: #0284c7 !important; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.3); border-right: 1px solid rgba(255,255,255,0.1);">VPL 2025 STATS</th>
+                    <th colspan="3" style="background-color: #475569 !important; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.3);">OVERALL STATS</th>
+                </tr>
+                <tr style="color: white; font-family: 'Oswald', sans-serif;">
+                    <th onclick="sortTable(4, true)" style="background-color: #0284c7 !important; text-align: center; padding: 10px; cursor: pointer; border-right: 1px solid rgba(255,255,255,0.1);">MAT</th>
+                    <th onclick="sortTable(5, true)" style="background-color: #0284c7 !important; text-align: center; padding: 10px; cursor: pointer; border-right: 1px solid rgba(255,255,255,0.1);">RUNS</th>
+                    <th onclick="sortTable(6, true)" style="background-color: #0284c7 !important; text-align: center; padding: 10px; cursor: pointer; border-right: 1px solid rgba(255,255,255,0.1);">WKTS</th>
+                    
+                    <th onclick="sortTable(7, true)" style="background-color: #475569 !important; text-align: center; padding: 10px; cursor: pointer; border-right: 1px solid rgba(255,255,255,0.1);">MAT</th>
+                    <th onclick="sortTable(8, true)" style="background-color: #475569 !important; text-align: center; padding: 10px; cursor: pointer; border-right: 1px solid rgba(255,255,255,0.1);">RUNS</th>
+                    <th onclick="sortTable(9, true)" style="background-color: #475569 !important; text-align: center; padding: 10px; cursor: pointer;">WKTS</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in players %}
+                
+                {% set is_wishlisted = p.id in wishlisted_ids %}
+                
+                <tr class="player-row {% if is_wishlisted %}wishlisted-row{% endif %}" data-wishlisted="{{ 'true' if is_wishlisted else 'false' }}">
+                    
+                    <td style="text-align: center;">
+                        {% if current_user.is_authenticated and current_user.role == 'captain' %}
+						<button type="button"
+								class="wishlist-btn {% if is_wishlisted %}active{% endif %}" 
+								onclick="toggleWishlist(this, {{ p.id }})"
+								title="Add to Wishlist">
+							<i class="fa fa-star"></i>
+						</button>
+                        {% else %}
+                            <span style="color:#cbd5e1;">●</span>
+                        {% endif %}
+                    </td>
+
+                    <td style="text-align: center; font-weight: 700; color: #0284c7;">{{ p.vpl_id }}</td>
+                    
+                    <td data-level="{{ p.level }}">
+                        <div style="display: flex; align-items: center;"><img src="{{ url_for('static', filename='uploads/' + p.photo) }}"
+							 class="player-img"
+							 onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/avatar.png') }}';">
+
+                            <div>
+                                <div style="font-weight: 700; text-transform: uppercase; font-size: 0.9rem;">{{ p.full_name }}</div>
+                                <div style="font-size: 0.75rem; color: #64748b;">
+                                    {% if p.level == 'Local/Club Level' %}Club Level{% else %}{{ p.level }}{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td data-role="{{ p.role }}">
+                        <div style="font-weight: 600; color: #334155; font-size: 0.9rem;">{{ p.role }}</div>
+                        <div style="font-size: 0.75rem; color: #94a3b8;">{{ p.style }}</div>
+                    </td>
+
+                    <td style="text-align: center; background-color: #f0f9ff;">{{ p.vpl_mat }}</td>
+                    <td style="text-align: center; background-color: #f0f9ff; font-weight: 700; color: #0284c7;">{{ p.vpl_runs }}</td>
+                    <td style="text-align: center; background-color: #f0f9ff; font-weight: 700; color: #ef4444;">{{ p.vpl_wkts }}</td>
+
+                    <td style="text-align: center; color: #64748b;">{{ p.or_mat }}</td>
+                    <td style="text-align: center; color: #64748b;">{{ p.or_runs }}</td>
+                    <td style="text-align: center; color: #64748b;">{{ p.or_wkts }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+/* =========================================================
+   1. WISHLIST TOGGLE (SAFE + OPTIMISTIC)
+   ========================================================= */
+function toggleWishlist(btn, playerId) {
+    const row = btn.closest('tr');
+    const wasActive = btn.classList.contains('active');
+
+    // Optimistic UI update
+    btn.classList.toggle('active');
+    row.classList.toggle('wishlisted-row');
+    row.setAttribute('data-wishlisted', wasActive ? 'false' : 'true');
+
+    fetch(`/toggle_wishlist/${playerId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status !== 'success') {
+            // safest rollback
+            location.reload();
+        }
+    })
+    .catch(() => location.reload());
+}
+
+/* =========================================================
+   2. FILTERING (DEBOUNCED + STABLE)
+   ========================================================= */
+let filterTimer;
+
+function debouncedFilter() {
+    clearTimeout(filterTimer);
+    filterTimer = setTimeout(applyFilters, 300);
+}
+
+function applyFilters() {
+    const search = document.getElementById('searchInput').value.toUpperCase();
+    const roleFilter = document.getElementById('roleFilter').value.toUpperCase();
+    const levelFilter = document.getElementById('levelFilter').value;
+
+    const wishFilterElem = document.getElementById('wishlistFilter');
+    const wishFilter = wishFilterElem ? wishFilterElem.value : 'all';
+
+    const table = document.getElementById('statsTable');
+    const rows = table.tBodies[0].rows;
+
+    for (let row of rows) {
+        const idText   = row.cells[1].innerText.toUpperCase();
+        const nameCell = row.cells[2];
+        const roleCell = row.cells[3];
+
+        const nameText = nameCell.innerText.toUpperCase();
+        const roleVal  = roleCell.getAttribute('data-role').toUpperCase();
+        const levelVal = nameCell.getAttribute('data-level').toUpperCase();
+        const isWish   = row.getAttribute('data-wishlisted') === 'true';
+
+        const matchSearch = nameText.includes(search) || idText.includes(search);
+        const matchRole   = roleFilter === 'ALL' || roleVal.includes(roleFilter);
+
+        let matchLevel = true;
+        if (levelFilter === 'Club') {
+            matchLevel = levelVal.includes('CLUB') || levelVal.includes('LOCAL');
+        } else if (levelFilter === 'District_State') {
+            matchLevel = levelVal.includes('DISTRICT') || levelVal.includes('STATE');
+        }
+
+        const matchWish = wishFilter !== 'wishlist' || isWish;
+
+        row.style.display =
+            (matchSearch && matchRole && matchLevel && matchWish) ? '' : 'none';
+    }
+}
+
+/* =========================================================
+   3. SORTING (FAST + NO INFINITE LOOP)
+   ========================================================= */
+const sortState = {};
+
+function sortTable(colIndex, isNumber = false) {
+    const table = document.getElementById('statsTable');
+    const tbody = table.tBodies[0];
+    const rows  = Array.from(tbody.rows);
+
+    sortState[colIndex] = !sortState[colIndex];
+    const dir = sortState[colIndex] ? 1 : -1;
+
+    rows.sort((a, b) => {
+        let x = a.cells[colIndex].innerText.trim();
+        let y = b.cells[colIndex].innerText.trim();
+
+        if (isNumber) {
+            x = parseInt(x) || 0;
+            y = parseInt(y) || 0;
+        }
+
+        return x > y ? dir : x < y ? -dir : 0;
+    });
+
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+/* =========================================================
+   4. EXCEL EXPORT (CLEAN + NON-BLOCKING)
+   ========================================================= */
+function exportToExcel() {
+    const originalTable = document.getElementById("statsTable");
+    const table = originalTable.cloneNode(true);
+
+    // Remove wishlist column
+    table.querySelectorAll("tr").forEach(row => {
+        if (row.cells.length > 0) row.deleteCell(0);
+    });
+
+    const wb = XLSX.utils.table_to_book(table, { sheet: "VPL Stats" });
+    XLSX.writeFile(wb, "VPL_Stats_2026.xlsx");
+}
+</script>
+
+{% endblock %}

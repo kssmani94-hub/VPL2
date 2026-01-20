@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    body {
+        background-color: #f4f6f9;
+        font-family: 'Roboto', sans-serif;
+    }
+
+    .login-container {
+        max-width: 450px;
+        margin: 60px auto;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+
+    .login-header {
+        background: #001529;
+        color: white;
+        padding: 30px;
+        text-align: center;
+        border-bottom: 4px solid #00a8ff;
+    }
+
+    .login-header h2 {
+        font-family: 'Oswald', sans-serif;
+        margin: 0;
+        font-size: 1.8rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .login-body {
+        padding: 40px 30px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 700;
+        color: #475569;
+        margin-bottom: 8px;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 1rem;
+        background: #f8fafc;
+        transition: 0.3s;
+    }
+
+    .form-control:focus {
+        border-color: #00a8ff;
+        background: white;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0, 168, 255, 0.1);
+    }
+
+    .btn-login {
+        width: 100%;
+        background: #00a8ff;
+        color: white;
+        border: none;
+        padding: 14px;
+        border-radius: 50px;
+        font-weight: 800;
+        font-family: 'Oswald', sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: 0.3s;
+        margin-top: 10px;
+    }
+
+    .btn-login:hover {
+        background: #008ecc;
+        transform: translateY(-2px);
+    }
+
+    /* Hidden by default */
+    #teamSelectGroup {
+        display: none;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-header">
+        <h2><i class="fa fa-lock"></i> Secure Access</h2>
+        <p style="margin: 5px 0 0; color: #94a3b8; font-size: 0.85rem;">VPL 2026 OFFICIAL PORTAL</p>
+    </div>
+
+    <div class="login-body">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div style="padding: 10px; border-radius: 6px; margin-bottom: 20px; text-align: center; font-weight: 600; font-size: 0.9rem; 
+                        background: {% if category == 'success' %}#dcfce7; color: #166534;{% else %}#fee2e2; color: #991b1b;{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('login') }}" method="POST">
+            
+            <div class="form-group">
+                <label class="form-label">Select Your Role</label>
+                <select name="role" id="roleSelect" class="form-control" onchange="toggleTeamSelect()" required>
+                    <option value="" disabled selected>-- Choose Role --</option>
+                    <option value="super_admin">Super Admin</option>
+                    <option value="admin">Admin</option>
+                    <option value="captain">Team Captain</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="teamSelectGroup">
+                <label class="form-label">Select Your Team</label>
+                <select name="team_name" class="form-control">
+                    <option value="" disabled selected>-- Choose Team --</option>
+                    <option value="Royal Strikers">Royal Strikers</option>
+                    <option value="Thunder 11">Thunder 11</option>
+                    <option value="Kings XI VPL">Kings XI VPL</option>
+                    <option value="Chennai Super Kings">Chennai Super Kings</option>
+                    <option value="Mumbai Indians">Mumbai Indians</option>
+                    <option value="Gujarat Titans">Gujarat Titans</option>
+                    <option value="Delhi Capitals">Delhi Capitals</option>
+                    <option value="Rajasthan Royals">Rajasthan Royals</option>
+                    <option value="Kolkata Knight Riders">Kolkata Knight Riders</option>
+                    <option value="Sunrisers Hyderabad">Sunrisers Hyderabad</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" name="username" class="form-control" placeholder="Enter ID" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-login">Login to Dashboard</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function toggleTeamSelect() {
+        var role = document.getElementById("roleSelect").value;
+        var teamGroup = document.getElementById("teamSelectGroup");
+        var teamSelect = teamGroup.querySelector("select");
+
+        if (role === "captain") {
+            teamGroup.style.display = "block";
+            teamSelect.required = true; // Make it mandatory if captain is selected
+        } else {
+            teamGroup.style.display = "none";
+            teamSelect.required = false; // Not mandatory for admins
+            teamSelect.value = ""; // Reset value
+        }
+    }
+</script>
+
+{% endblock %}

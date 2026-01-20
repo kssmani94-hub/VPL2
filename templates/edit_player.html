@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="background: #f4f7f6; min-height: 100vh; padding: 20px;">
+    <div class="vpl-card" style="max-width: 850px; margin: 0 auto; background: #fff; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.12); overflow: hidden;">
+        
+        <div style="background: #003554; color: white; padding: 25px; text-align: center; border-bottom: 5px solid #00a6fb;">
+            <h2 style="font-family: 'Oswald'; margin: 0; text-transform: uppercase;">
+                <i class="fa fa-user-edit"></i> Edit Player: {{ player.vpl_id }}
+            </h2>
+        </div>
+
+        <form method="POST" style="padding: 25px;" onsubmit="return confirm('Update all details for {{ player.full_name }}?');">
+            
+            <div style="display: flex; gap: 20px; margin-bottom: 30px; align-items: center; background: #f8fbff; padding: 20px; border-radius: 15px; border: 1px solid #e0eefc; flex-wrap: wrap;">
+                <img src="{{ url_for('static', filename='uploads/' + player.photo) }}" 
+                     style="width: 80px; height: 100px; object-fit: cover; border-radius: 8px; border: 3px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                
+                <div style="flex: 1; min-width: 200px;">
+                    <label style="font-weight: 800; color: #d35400; font-size: 0.75rem; text-transform: uppercase; display: block; margin-bottom: 5px;">Player Status</label>
+                    <select name="status" style="width: 100%; padding: 12px; border: 2px solid #f39c12; border-radius: 10px; font-weight: bold;">
+                        <option value="Pending Payment" {% if player.status == 'Pending Payment' %}selected{% endif %}>Pending Payment</option>
+                        <option value="Awaiting Approval" {% if player.status == 'Awaiting Approval' %}selected{% endif %}>Awaiting Approval</option>
+                        <option value="Approved" {% if player.status == 'Approved' %}selected{% endif %}>Approved</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                <div class="field">
+                    <label style="font-weight: bold; color: #003554;">Full Name *</label>
+                    <input type="text" name="full_name" value="{{ player.full_name }}" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+                <div class="field">
+                    <label style="font-weight: bold; color: #003554;">Age *</label>
+                    <input type="number" name="age" value="{{ player.age }}" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                <div class="field">
+                    <label style="font-weight: bold; color: #003554;">Primary Phone *</label>
+                    <input type="text" name="phone" value="{{ player.phone }}" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+                <div class="field">
+                    <label style="font-weight: bold; color: #003554;">Cricket Level</label>
+                    <select name="level" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                        <option value="Club Level" {% if player.level == 'Club Level' %}selected{% endif %}>Club Level</option>
+                        <option value="District/State Level" {% if player.level == 'District/State Level' %}selected{% endif %}>District/State Level</option>
+                    </select>
+                </div>
+            </div>
+
+            <h4 style="color: #00a6fb; text-transform: uppercase; font-size: 0.8rem; margin-bottom: 15px;">CricHeroes Information</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                <div class="field">
+                    <label style="font-weight: bold; color: #003554;">CH Mobile *</label>
+                    <input type="text" name="ch_mobile" value="{{ player.ch_mobile }}" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+                <div class="field">
+                    <label style="font-weight: bold; color: #003554;">CH Name *</label>
+                    <input type="text" name="ch_name" value="{{ player.ch_name }}" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+            </div>
+
+            <div style="background: #f9f9f9; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+                <label style="font-weight: 800; font-size: 0.75rem; color: #003554; text-transform: uppercase; display: block; margin-bottom: 15px;">Kit & Jersey Customization</label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px;">
+                    <div>
+                        <label style="font-size: 0.7rem; font-weight: bold;">Jersey Name</label>
+                        <input type="text" name="shirt_name" value="{{ player.shirt_name }}" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.7rem; font-weight: bold;">Number</label>
+                        <input type="number" name="shirt_number" value="{{ player.shirt_number }}" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.7rem; font-weight: bold;">Size</label>
+                        <select name="shirt_size" style="width: 100%; padding: 10px; border-radius: 6px;">
+                            {% for size in ['S-36', 'M-38', 'L-40', 'XL-42', 'XXL-44'] %}
+                                <option value="{{ size }}" {% if player.shirt_size == size %}selected{% endif %}>{{ size }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.7rem; font-weight: bold;">Sleeves</label>
+                        <select name="sleeves" style="width: 100%; padding: 10px; border-radius: 6px;">
+                            <option value="Half" {% if player.sleeves == 'Half' %}selected{% endif %}>Half</option>
+                            <option value="Full" {% if player.sleeves == 'Full' %}selected{% endif %}>Full</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                <div class="field">
+                    <label style="font-weight: bold; color: #003554;">Current Regular Team *</label>
+                    <input type="text" name="current_team" value="{{ player.current_team }}" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+                <div class="field">
+                    <label style="font-weight: bold; color: #003554;">Player Role</label>
+                    <select name="role" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                        {% for r in ['Batsman', 'Bowler', 'All-Rounder', 'Wicket-Keeper'] %}
+                            <option value="{{ r }}" {% if player.role == r %}selected{% endif %}>{{ r }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                <div class="field">
+                    <label style="font-weight: bold; color: #003554;">Playing Style (RHB/Fast)</label>
+                    <input type="text" name="style" value="{{ player.style }}" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+                <div class="field">
+                    <label style="font-weight: bold; color: #003554;">Previous VPL Team</label>
+                    <input type="text" name="prev_team" value="{{ player.prev_team }}" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <label style="font-weight: bold; color: #003554;">Internal Admin Comments</label>
+                <textarea name="comments" rows="3" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: sans-serif;">{{ player.comments }}</textarea>
+            </div>
+
+            <div style="display: flex; gap: 15px;">
+                <button type="submit" style="flex: 2; background: #27ae60; color: white; padding: 16px; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer; text-transform: uppercase;">
+                    Save All Changes
+                </button>
+                <a href="{{ url_for('players') }}" style="flex: 1; background: #f1f5f9; color: #475569; padding: 16px; border-radius: 12px; text-decoration: none; text-align: center; font-weight: bold; border: 1px solid #e2e8f0;">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 1200px; margin: 40px auto; padding: 0 20px; font-family: 'Segoe UI', sans-serif;">
+    
+    <div style="text-align: center; margin-bottom: 40px;">
+        <h1 style="font-family: 'Oswald'; color: #003554; text-transform: uppercase; font-size: 2.5rem; margin: 0;">VPL 2026 Player Slots</h1>
+        <p style="color: #00a6fb; font-weight: 700; letter-spacing: 1px;">TOTAL CAPACITY: 150 PLAYERS</p>
+    </div>
+
+    <div style="display: flex; gap: 20px; margin-bottom: 30px; justify-content: center; flex-wrap: wrap;">
+        <div style="background: #003554; color: white; padding: 15px 30px; border-radius: 10px; text-align: center;">
+            <span style="display:block; font-size: 0.7rem; opacity: 0.8; text-transform: uppercase;">Confirmed Players</span>
+            <span style="font-size: 1.5rem; font-weight: 800;">{{ players|length }}</span>
+        </div>
+        <div style="background: #00a6fb; color: white; padding: 15px 30px; border-radius: 10px; text-align: center;">
+            <span style="display:block; font-size: 0.7rem; opacity: 0.8; text-transform: uppercase;">Slots Available</span>
+            <span style="font-size: 1.5rem; font-weight: 800;">{{ 150 - players|length }}</span>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+        {% for p in players %}
+        <div style="background: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+            <div style="background: #00a6fb; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; flex-shrink: 0;">
+                {{ loop.index }}
+            </div>
+            <div>
+                <div style="font-size: 0.6rem; font-weight: 900; color: #00a6fb; text-transform: uppercase;">{{ p.vpl_id }}</div>
+                <div style="font-weight: 700; color: #003554; font-size: 0.9rem;">{{ p.full_name }}</div>
+                <div style="font-size: 0.7rem; color: #64748b;">{{ p.role }}</div>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% for i in range(players|length + 1, 151) %}
+        <div style="background: #f8fafc; border: 1px dashed #cbd5e1; padding: 15px; border-radius: 12px; display: flex; align-items: center; gap: 12px; opacity: 0.6;">
+            <div style="background: #cbd5e1; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; flex-shrink: 0;">
+                {{ i }}
+            </div>
+            <div>
+                <div style="font-size: 0.6rem; font-weight: 900; color: #94a3b8; text-transform: uppercase;">VPL-{{ "%03d" % i }}</div>
+                <div style="font-weight: 700; color: #94a3b8; font-size: 0.9rem;">Available Slot</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div style="text-align: center; margin-top: 50px;">
+        <a href="{{ url_for('register') }}" style="background: #00a6fb; color: white; padding: 15px 40px; border-radius: 50px; text-decoration: none; font-weight: 800; text-transform: uppercase; box-shadow: 0 10px 20px rgba(0, 166, 251, 0.3);">Register Your Slot Now</a>
+    </div>
+</div>
+{% endblock %}

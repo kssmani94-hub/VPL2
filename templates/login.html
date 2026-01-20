@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    /* Full-screen background with a cricket-themed gradient */
+    .login-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle at center, #003554 0%, #001d2e 100%);
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Abstract background shapes for depth */
+    .login-wrapper::before {
+        content: "";
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        background: rgba(0, 166, 251, 0.1);
+        border-radius: 50%;
+        top: -100px;
+        left: -100px;
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 420px;
+        background: rgba(255, 255, 255, 0.05); /* Glassmorphism */
+        backdrop-filter: blur(15px);
+        border-radius: 25px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        overflow: hidden;
+        animation: slideUp 0.8s ease-out;
+    }
+
+    .login-header {
+        padding: 40px 30px 20px;
+        text-align: center;
+    }
+
+    .vpl-logo-icon {
+        width: 80px;
+        height: 80px;
+        margin-bottom: 15px;
+        filter: drop-shadow(0 0 10px rgba(0, 166, 251, 0.5));
+    }
+
+    .login-header h2 {
+        font-family: 'Oswald', sans-serif;
+        color: white;
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        font-size: 2.2rem;
+    }
+
+    .login-header p {
+        color: #00a6fb;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        margin-top: 5px;
+        letter-spacing: 1px;
+    }
+
+    /* --- ADDED ROLE SELECTOR --- */
+    .role-selector {
+        display: flex;
+        background: rgba(255, 255, 255, 0.05);
+        margin: 0 40px 10px;
+        border-radius: 12px;
+        padding: 5px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .role-btn {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.5);
+        font-family: 'Oswald', sans-serif;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: 0.3s;
+    }
+
+    .role-btn.active {
+        background: #00a6fb;
+        color: white;
+        box-shadow: 0 4px 15px rgba(0, 166, 251, 0.3);
+    }
+
+    .login-form {
+        padding: 20px 40px 40px;
+    }
+
+    .input-group {
+        margin-bottom: 25px;
+        position: relative;
+    }
+
+    .input-group label {
+        display: block;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 10px;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+    }
+
+    .input-group i {
+        position: absolute;
+        left: 15px;
+        top: 40px;
+        color: #00a6fb;
+    }
+
+    .input-group input {
+        width: 100%;
+        padding: 14px 15px 14px 45px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        font-size: 1rem;
+        color: white;
+        transition: all 0.3s;
+        box-sizing: border-box;
+    }
+
+    .input-group input::placeholder {
+        color: rgba(255, 255, 255, 0.3);
+    }
+
+    .input-group input:focus {
+        border-color: #00a6fb;
+        background: rgba(255, 255, 255, 0.1);
+        outline: none;
+        box-shadow: 0 0 15px rgba(0, 166, 251, 0.2);
+    }
+
+    .btn-login-submit {
+        width: 100%;
+        background: linear-gradient(135deg, #00a6fb, #003554);
+        color: white;
+        border: none;
+        padding: 16px;
+        border-radius: 12px;
+        font-size: 1.1rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: 0.3s;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .btn-login-submit:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px rgba(0, 166, 251, 0.3);
+        filter: brightness(1.1);
+    }
+
+    /* Modern Error Styling */
+    .login-error {
+        background: rgba(239, 68, 68, 0.1);
+        color: #f87171;
+        padding: 12px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-align: center;
+        border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(40px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<div class="login-wrapper">
+    <div class="login-card">
+        <div class="login-header">
+            <img src="{{ url_for('static', filename='images/image_1.png') }}" class="vpl-logo-icon" alt="VPL Logo">
+            <h2>Portal Login</h2>
+            <p>Vallalar Premier League 2026</p>
+        </div>
+
+        <div class="role-selector">
+            <button type="button" class="role-btn active" onclick="setRole('admin', this)">
+                <i class="fa fa-user-shield"></i> Admin
+            </button>
+            <button type="button" class="role-btn" onclick="setRole('captain', this)">
+                <i class="fa fa-cricket-bat-ball"></i> Captain
+            </button>
+        </div>
+
+        <div class="login-form">
+
+            <form action="{{ url_for('login') }}" method="POST">
+                <input type="hidden" name="login_role" id="login_role" value="admin">
+
+                <div class="input-group">
+                    <label id="user_label">Username</label>
+                    <i id="user_icon" class="fa fa-user-shield"></i>
+                    <input type="text" name="username" id="username_input" placeholder="Admin ID" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Password</label>
+                    <i class="fa fa-key"></i>
+                    <input type="password" name="password" placeholder="Access Key" required>
+                </div>
+
+                <button type="submit" class="btn-login-submit">
+                    <span id="btn_text">Access Dashboard</span> <i class="fa fa-right-to-bracket"></i>
+                </button>
+            </form>
+            
+            <div style="text-align: center; margin-top: 25px;">
+                <a href="{{ url_for('home') }}" style="color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">
+                    <i class="fa fa-arrow-left"></i> Back to Public Website
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function setRole(role, btn) {
+        // Update hidden field
+        document.getElementById('login_role').value = role;
+        
+        // Update button UI
+        document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Update Labels and Placeholders dynamically
+        const label = document.getElementById('user_label');
+        const icon = document.getElementById('user_icon');
+        const input = document.getElementById('username_input');
+        const btnText = document.getElementById('btn_text');
+
+        if (role === 'captain') {
+            label.innerText = "Captain ID";
+            icon.className = "fa fa-id-card";
+            input.placeholder = "Team Captain ID";
+            btnText.innerText = "Captain Login";
+        } else {
+            label.innerText = "Username";
+            icon.className = "fa fa-user-shield";
+            input.placeholder = "Admin ID";
+            btnText.innerText = "Access Dashboard";
+        }
+    }
+</script>
+
+{% endblock %}

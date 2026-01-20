@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    .pay-wrapper {
+        max-width: 600px;
+        margin: 30px auto;
+        padding: 0 15px;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    .pay-card {
+        background: white;
+        border-radius: 25px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        overflow: hidden;
+        animation: slideUp 0.6s ease-out;
+    }
+
+    /* HEADER STYLING */
+    .pay-header-small {
+        background: #003554;
+        color: white;
+        padding: 15px;
+        text-align: center;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .amount-display {
+        text-align: center;
+        padding: 30px 20px;
+    }
+
+    .amount-display h1 {
+        font-size: 4.5rem;
+        margin: 0;
+        color: #27ae60;
+        font-weight: 900;
+    }
+
+    /* MANUAL PAYMENT HIGHLIGHT BOX */
+    .manual-payment-box {
+        background: #fff9db;
+        border: 2px solid #f59f00;
+        padding: 25px;
+        border-radius: 15px;
+        margin-bottom: 25px;
+        text-align: center;
+        position: relative;
+    }
+
+    .manual-payment-box h2 {
+        font-size: 2.2rem;
+        color: #000;
+        margin: 10px 0;
+        letter-spacing: 2px;
+    }
+
+    .copy-badge {
+        background: #003554;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 50px;
+        font-size: 0.7rem;
+        cursor: pointer;
+        text-transform: uppercase;
+        display: inline-block;
+        margin-top: 5px;
+        border: none;
+        transition: 0.2s;
+    }
+
+    .copy-badge:active { transform: scale(0.9); }
+
+    .btn-finish {
+        width: 100%;
+        background: #27ae60;
+        color: white;
+        border: none;
+        padding: 20px;
+        border-radius: 50px;
+        font-weight: 800;
+        font-size: 1.1rem;
+        cursor: pointer;
+        text-transform: uppercase;
+        transition: 0.3s;
+        box-shadow: 0 10px 20px rgba(39, 174, 96, 0.3);
+    }
+
+    .btn-finish:disabled {
+        background: #94a3b8;
+        cursor: not-allowed;
+    }
+
+    @media (max-width: 600px) {
+        .pay-wrapper { margin: 10px auto; }
+        .amount-display h1 { font-size: 3.5rem; }
+        .manual-payment-box h2 { font-size: 1.8rem; }
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<div class="pay-wrapper">
+
+    {% if success %}
+    <div class="pay-card">
+        <div class="success-header" style="background: #27ae60; color: white; padding: 40px 20px; text-align: center;">
+            <div style="width: 70px; height: 70px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 2rem;">
+                <i class="fa fa-check"></i>
+            </div>
+            <h2 style="margin: 0; font-family: 'Oswald';">REGISTRATION SUBMITTED</h2>
+        </div>
+        
+        <div style="padding: 30px; text-align: center;">
+            <p style="color: #64748b;">Thank you, <strong>{{ player.full_name }}</strong>. Your VPL ID is:</p>
+            <h1 style="font-size: 3.5rem; color: #00a6fb; margin: 10px 0; font-family: 'Oswald';">{{ player.vpl_id }}</h1>
+            <a href="{{ url_for('home') }}" style="display:block; background: #003554; color: white; padding: 15px; border-radius: 50px; text-decoration: none; font-weight: 800; margin-top: 20px; text-align:center;">BACK TO HOME</a>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="pay-card">
+        <div class="pay-header-small">VPL Season 2 Payment Portal</div>
+
+        <div class="amount-display">
+            <p style="margin: 0; color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 0.8rem;">Amount to Pay</p>
+            {% set amount = 550 if player.sleeves == 'Full' else 500 %}
+            <h1>₹{{ amount }}</h1>
+            <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 5px;">Player: {{ player.full_name }}</p>
+        </div>
+
+        <div style="padding: 0 30px 40px;">
+            <form action="{{ url_for('payment', player_id=player.id) }}" method="POST" enctype="multipart/form-data" id="payForm">
+                
+                <div style="margin-bottom: 25px;">
+                    <label style="font-weight: 800; font-size: 0.75rem; color: #003554; text-transform: uppercase; display: block; margin-bottom: 10px;">1. Choose Method</label>
+                    <select name="payment_method" id="payment_method" required onchange="toggleUPISection()" style="width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #e2e8f0; font-size: 1rem; outline: none;">
+                        <option value="UPI">UPI Transfer (PhonePe / GPay / Paytm)</option>
+                        <option value="Already Paid">Already Paid to Committee</option>
+                        <option value="Cash">Pay Later / Cash</option>
+                    </select>
+                </div>
+
+                <div id="upi_section">
+                    <div class="manual-payment-box">
+                        <span style="font-size: 0.75rem; font-weight: 800; color: #856404; text-transform: uppercase;">2. Pay to this UPI Number</span>
+                        <h2 id="upiNumber">9894982431</h2>
+                        <p style="margin-bottom:10px;">Name: <span style="color: #c92a2a;">Deneshkumar Velmurugan</span></p>
+                        <button type="button" class="copy-badge" onclick="copyUPI()">Copy Number <i class="fa fa-copy"></i></button>
+                    </div>
+
+                    <div style="background: #f8fafc; border: 2px solid #e2e8f0; padding: 20px; border-radius: 15px; margin-bottom: 25px;">
+                        <label style="font-weight: 800; font-size: 0.75rem; color: #334155; text-transform: uppercase; display: block; margin-bottom: 10px;">3. Upload Screenshot *</label>
+                        <input type="file" name="screenshot" id="screenshot_input" accept="image/*" style="width: 100%;">
+                        <small style="display:block; margin-top:5px; color:#64748b;">Max size 20MB</small>
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn-finish">
+                    Finish Registration
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+    // Copy function for mobile users
+    function copyUPI() {
+        const num = document.getElementById("upiNumber").innerText;
+        navigator.clipboard.writeText(num).then(() => {
+            const btn = document.querySelector(".copy-badge");
+            btn.innerHTML = "Copied! <i class='fa fa-check'></i>";
+            btn.style.background = "#27ae60";
+            setTimeout(() => {
+                btn.innerHTML = "Copy Number <i class='fa fa-copy'></i>";
+                btn.style.background = "#003554";
+            }, 2000);
+        });
+    }
+
+    function toggleUPISection() {
+        const method = document.getElementById('payment_method').value;
+        const upiSection = document.getElementById('upi_section');
+        const screenshotInput = document.getElementById('screenshot_input');
+
+        if (method === 'UPI') {
+            upiSection.style.display = 'block';
+            screenshotInput.required = true;
+        } else {
+            upiSection.style.display = 'none';
+            screenshotInput.required = false;
+        }
+    }
+
+    // Handle button state during upload
+    document.getElementById('payForm').onsubmit = function() {
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerHTML = "Processing... Please Wait <i class='fa fa-spinner fa-spin'></i>";
+    };
+
+    window.onload = toggleUPISection;
+</script>
+{% endblock %}

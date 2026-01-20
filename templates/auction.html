@@ -1,0 +1,631 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    /* CSS Variables */
+    :root {
+        --primary-color: #003554; 
+        --accent-color: #00a6fb;
+        --secondary-color: #1e293b;
+        --success-color: #15803d; --danger-color: #b91c1c;
+        --info-color: #0284c7; --warning-color: #f59e0b;
+        --border-radius: 15px;
+        --chart-green: #10b981; --chart-blue: #3b82f6; --chart-orange: #f97316;
+        --gold: #ffb703;
+    }
+
+    /* Layout */
+    .auction-wrapper { display: flex; flex-direction: column; gap: 20px; padding: 20px 0; }
+
+    /* HEADER */
+    .top-header { background: white; padding: 15px 30px; border-radius: var(--border-radius); display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--accent-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .header-title { font-size: 1.4rem; font-weight: 700; color: var(--primary-color); margin: 0; }
+    .header-controls { display: flex; gap: 15px; align-items: center; }
+    
+    /* CONTROL BUTTONS */
+    .ctrl-btn { border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; color: white; text-decoration: none; }
+    .ctrl-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+    .btn-start { background-color: var(--success-color); }
+    .btn-next { background-color: var(--info-color); }
+    .btn-pause { background-color: var(--warning-color); color: black; }
+    .btn-reset { background-color: var(--danger-color); }
+
+    /* ACTION PILLS */
+    .action-row { display: flex; flex-direction: row; gap: 15px; width: 100%; justify-content: center; margin-top: 15px; }
+    .action-pill-btn { border: none; padding: 10px 25px; border-radius: 50px; font-weight: 700; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; color: white; transition: all 0.2s ease; text-decoration: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15); min-width: 130px; }
+    .action-pill-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.2); }
+    .pill-sold { background-color: #22c55e; }
+    .pill-unsold { background-color: #dc2626; }
+
+    /* STATS BAR */
+    .stats-bar { background: white; padding: 20px; border-radius: var(--border-radius); display: flex; justify-content: space-between; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .stat-item { flex: 1; border-right: 1px solid #eee; } .stat-item:last-child { border-right: none; }
+    .stat-label { display: block; font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
+    .stat-value { font-size: 2rem; font-weight: 700; color: var(--primary-color); }
+
+    /* PROJECTOR CONTAINER */
+    .projector-container { flex-grow: 1; background-color: white; border-radius: var(--border-radius); display: flex; overflow: hidden; border: 4px solid #fff; min-height: 550px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+    .card-sidebar { width: 38%; padding: 30px; background: linear-gradient(135deg, #e0f2fe, #bae6fd); display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 2px solid #e0f2fe; position: relative; }
+    .player-photo-frame { width: 100%; height: 400px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; position: relative; }
+    .player-photo { max-width: 100%; max-height: 100%; width: auto; height: auto; border-radius: 15px; border: 5px solid var(--accent-color); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+    .card-content { width: 62%; padding: 40px; display: flex; flex-direction: column; justify-content: space-between; }
+    
+    /* WISHLIST ALERT BADGE */
+    .wishlist-alert {
+        position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+        background: var(--gold); color: black; padding: 8px 15px;
+        border-radius: 20px; font-weight: 800; font-size: 0.9rem;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 10;
+        animation: pulse 1.5s infinite; border: 2px solid white;
+        white-space: nowrap;
+    }
+    @keyframes pulse { 0% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.1); } 100% { transform: translateX(-50%) scale(1); } }
+
+    /* TYPOGRAPHY */
+    .player-no-label { font-size: 1.2rem; font-weight: 700; color: var(--accent-color); text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px; }
+    .player-name { font-size: 4rem; font-weight: 800; color: var(--primary-color); margin: 0; line-height: 1; text-transform: uppercase; border-bottom: 4px solid #e0f2fe; padding-bottom: 15px; margin-bottom: 20px; }
+    
+    /* PROFILE GRID */
+    .profile-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+    .profile-item { display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 10px; border-radius: 10px; border-left: 5px solid var(--accent-color); }
+    .profile-icon { font-size: 1.5rem; color: var(--accent-color); }
+    .profile-data label { display: block; font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
+    .profile-data span { font-size: 1.1rem; font-weight: 700; color: var(--secondary-color); }
+
+    /* STATS TABLES */
+    .stats-table-box { width: 100%; }
+    .stats-header { background: var(--primary-color); color: white; padding: 12px; text-align: center; font-weight: 700; border-radius: 10px 10px 0 0; text-transform: uppercase; letter-spacing: 1px; }
+    .styled-table { width: 100%; border-collapse: collapse; text-align: center; background: white; border: 1px solid #e2e8f0; }
+    .styled-table th { background-color: #f1f5f9; color: #475569; padding: 12px; font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+    .styled-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: var(--secondary-color); font-size: 1.1rem; }
+
+    /* DASHBOARD */
+    .dashboard-section { margin-top: 40px; }
+    .dashboard-main-title { background: #001529; color: white; text-align: center; padding: 15px; font-family: 'Oswald', sans-serif; font-size: 1.8rem; letter-spacing: 2px; border-radius: 10px 10px 0 0; text-transform: uppercase; border-bottom: 4px solid #00a8ff; margin-bottom: 0; }
+    .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; background: white; padding: 20px; border-radius: 0 0 15px 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+    .dash-card { background: #f8fafc; border-radius: 10px; padding: 20px; border: 1px solid #e2e8f0; }
+    .dash-card h3 { text-align: center; color: var(--primary-color); border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-top: 0; }
+    .team-row { margin-bottom: 12px; }
+    .t-name { display: block; font-size: 0.85rem; font-weight: 700; color: #444; margin-bottom: 3px; }
+    .progress-track { background: #e2e8f0; border-radius: 10px; height: 20px; width: 100%; overflow: hidden; }
+    .progress-fill { height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; color: white; font-size: 0.75rem; font-weight: 700; }
+    .fill-green { background: var(--chart-green); } .fill-blue { background: var(--chart-blue); } .fill-orange { background: var(--chart-orange); }
+
+    /* CAPTAIN WISHLIST BOX */
+    .captain-wishlist-box { margin-top: 40px; background: white; padding: 20px; border-radius: 10px; border-top: 5px solid var(--gold); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+    .wish-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    .wish-table th { text-align: left; padding: 10px; border-bottom: 2px solid #eee; color: #666; font-size: 0.9rem; }
+    .wish-table td { padding: 10px; border-bottom: 1px solid #eee; font-weight: 600; color: #333; }
+    .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; color: white; font-weight: 700; }
+    .badge-pending { background: #64748b; } .badge-sold { background: var(--success-color); } .badge-unsold { background: var(--danger-color); }
+
+    /* TOGGLE SECTIONS */
+    .toggle-section { margin-top: 30px; }
+    .status-btn { padding: 15px 30px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; color: white; margin-right: 10px; }
+    .btn-sold-list { background: #10b981; }
+    .btn-unsold-list { background: #ef4444; }
+    .player-list-box { display: none; background: white; padding: 20px; border-radius: 10px; margin-top: 20px; }
+    .player-list-box.active { display: block; }
+    .list-table { width: 100%; border-collapse: collapse; }
+    .list-table th, .list-table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+
+    /* MODAL */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; }
+    /* --- PROFESSIONAL MODAL STYLING --- */
+    .modal-content {
+        background: #ffffff;
+        width: 400px;
+        padding: 40px;
+        border-radius: 20px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        text-align: center;
+        border: 1px solid #f1f5f9;
+    }
+	
+	/* --- PROFESSIONAL LIST & TABS --- */
+
+	/* 1. The Container Card */
+	.player-list-container {
+		background: white;
+		border-radius: 20px;
+		box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+		border: 1px solid #f1f5f9;
+		overflow: hidden;
+		margin-top: 30px;
+		animation: slideUp 0.5s ease-out;
+	}
+
+	/* 2. Header with Segmented Tabs */
+	.list-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 20px 30px;
+		background: #ffffff;
+		border-bottom: 1px solid #f1f5f9;
+	}
+
+	.list-title {
+		font-size: 1.1rem;
+		font-weight: 800;
+		color: #1e293b;
+		margin: 0;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	/* 3. The Toggle Switch (Tabs) */
+	.toggle-wrapper {
+		background: #f1f5f9;
+		padding: 5px;
+		border-radius: 50px;
+		display: flex;
+		gap: 5px;
+	}
+
+	.tab-btn {
+		padding: 8px 24px;
+		border-radius: 40px;
+		border: none;
+		cursor: pointer;
+		font-weight: 700;
+		font-size: 0.85rem;
+		color: #64748b;
+		background: transparent;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.tab-btn:hover { color: #334155; }
+
+	/* Active States */
+	.tab-btn.active {
+		background: white;
+		box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+		transform: scale(1.05);
+	}
+	.tab-btn.active.sold-tab { color: #10b981; } /* Green for Sold */
+	.tab-btn.active.unsold-tab { color: #ef4444; } /* Red for Unsold */
+
+
+	/* 4. Professional Table */
+	.pro-table { width: 100%; border-collapse: collapse; }
+
+	.pro-table th {
+		text-align: left;
+		padding: 15px 30px;
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 1px;
+		color: #94a3b8;
+		font-weight: 700;
+		background: #fcfcfc;
+		border-bottom: 1px solid #f1f5f9;
+	}
+
+	.pro-table td {
+		padding: 16px 30px;
+		border-bottom: 1px solid #f8fafc;
+		vertical-align: middle;
+		color: #334155;
+		font-size: 0.95rem;
+	}
+
+	.pro-table tr:last-child td { border-bottom: none; }
+	.pro-table tr:hover td { background-color: #f8fafc; }
+
+	/* Table Columns Styling */
+	.col-name { font-weight: 700; color: #0f172a; font-size: 1rem; }
+	.col-team { color: #3b82f6; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+	.col-price { font-weight: 700; color: #10b981; font-family: 'Segoe UI', monospace; font-size: 1.1rem; }
+
+	/* Badges */
+	.badge-role {
+		background: #f1f5f9;
+		color: #475569;
+		padding: 5px 12px;
+		border-radius: 6px;
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	/* Action Button */
+	.btn-undo-circle {
+		width: 36px; height: 36px;
+		border-radius: 50%;
+		background: #fff1f2;
+		color: #ef4444;
+		border: none;
+		display: flex; align-items: center; justify-content: center;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	.btn-undo-circle:hover {
+		background: #ef4444; color: white;
+		transform: rotate(-90deg);
+		box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+	}
+
+	/* Animations */
+	@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+	.fade-in-section { animation: fadeIn 0.4s ease-out; }
+	@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+	/* Empty State */
+	.empty-state { text-align: center; padding: 40px; color: #94a3b8; font-style: italic; }
+
+    .modal-header { margin-bottom: 25px; }
+    .modal-title { font-size: 1.5rem; font-weight: 800; color: #1e293b; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+    .modal-subtitle { font-size: 0.9rem; color: #64748b; margin-top: 5px; }
+    .modal-form-group { margin-bottom: 20px; text-align: left; }
+    .modal-label { display: block; font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 8px; text-transform: uppercase; }
+    .modal-input, .modal-select { width: 100%; padding: 12px 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 1rem; color: #334155; background-color: #f8fafc; box-sizing: border-box; }
+    .modal-input:focus, .modal-select:focus { border-color: #00a6fb; background-color: white; outline: none; box-shadow: 0 0 0 3px rgba(0, 166, 251, 0.1); }
+    .modal-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+    .btn-confirm-sale { background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; width: 100%; text-transform: uppercase; letter-spacing: 0.5px; }
+    .btn-cancel { background: transparent; border: none; color: #94a3b8; font-weight: 600; cursor: pointer; padding: 10px; }
+    .btn-cancel:hover { color: #ef4444; }
+
+    @media (max-width: 1000px) {
+        .projector-container { flex-direction: column; height: auto; }
+        .card-sidebar, .card-content { width: 100%; }
+        .dashboard-grid { grid-template-columns: 1fr; }
+        .profile-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+</style>
+
+<div class="auction-wrapper">
+
+    <div class="top-header">
+        <h2 class="header-title">
+            {% if control.status == 'Not Started' %} Auction Ready
+            {% elif control.status == 'Paused' %} ⚠️ Auction Paused
+            {% else %} 🔴 Live Auction {% endif %}
+        </h2>
+        
+        <div class="header-controls">
+            {% if is_admin %}
+                {% if control.status == 'Not Started' %}
+                    <a href="{{ url_for('auction_control', action='start') }}" class="ctrl-btn btn-start"><i class="fa fa-play"></i> START</a>
+                {% elif control.status == 'Live' %}
+                    <a href="{{ url_for('pick_random_player') }}" class="ctrl-btn btn-next"><i class="fa fa-forward"></i> NEXT</a>
+                    <a href="{{ url_for('auction_control', action='pause') }}" class="ctrl-btn btn-pause"><i class="fa fa-pause"></i> PAUSE</a>
+                {% else %}
+                    <a href="{{ url_for('auction_control', action='resume') }}" class="ctrl-btn btn-start"><i class="fa fa-play"></i> RESUME</a>
+                {% endif %}
+                <button onclick="openModal()" class="ctrl-btn btn-reset"><i class="fa fa-rotate-left"></i> RESET</button>
+            {% else %}
+                <span style="font-weight:bold; color:#64748b; background:#f1f5f9; padding:8px 15px; border-radius:20px;">
+                    <i class="fa fa-eye"></i> Audience View
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat-item"><span class="stat-label">Pool Size</span><span class="stat-value">{{ stats.pool }}</span></div>
+        <div class="stat-item"><span class="stat-label">Available</span><span class="stat-value" style="color:var(--info-color);">{{ stats.available }}</span></div>
+        <div class="stat-item"><span class="stat-label">Sold</span><span class="stat-value" style="color:var(--success-color);">{{ stats.sold }}</span></div>
+        <div class="stat-item"><span class="stat-label">Unsold</span><span class="stat-value" style="color:var(--danger-color);">{{ stats.unsold }}</span></div>
+    </div>
+
+    {% if player and control.status != 'Not Started' %}
+    <div class="projector-container">
+        <div class="card-sidebar">
+            
+            {% if is_captain and player.id in wishlist_ids %}
+            <div class="wishlist-alert"><i class="fa fa-star"></i> TARGET PLAYER</div>
+            {% endif %}
+
+            <div class="player-photo-frame">
+                <img src="{{ url_for('static', filename='uploads/' + player.photo) }}" onerror="this.src='https://via.placeholder.com/400'" class="player-photo">
+            </div>
+            
+            {% if is_admin and control.status == 'Live' %}
+            <div class="action-row">
+                 <button onclick="openSoldModal()" class="action-pill-btn pill-sold"><i class="fa fa-check"></i> Sold</button>
+                 <a href="{{ url_for('mark_unsold', player_id=player.id) }}" class="action-pill-btn pill-unsold"><i class="fa fa-times"></i> Unsold</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="card-content">
+            <div>
+                <div class="player-no-label">PLAYER NO: {{ player.vpl_id | replace('VPL', '') | replace('-', '') | trim }}</div>
+                <h1 class="player-name">{{ player.full_name }}</h1>
+            </div>
+
+            <div class="profile-grid">
+                <div class="profile-item"><div class="profile-icon"><i class="fa fa-user-tag"></i></div><div class="profile-data"><label>Role</label><span>{{ player.role }}</span></div></div>
+                <div class="profile-item"><div class="profile-icon"><i class="fa fa-birthday-cake"></i></div><div class="profile-data"><label>Age</label><span>{{ player.age }}</span></div></div>
+                <div class="profile-item"><div class="profile-icon"><i class="fa fa-cricket"></i></div><div class="profile-data"><label>Style</label><span>{{ player.style }}</span></div></div>
+                <div class="profile-item"><div class="profile-icon"><i class="fa fa-layer-group"></i></div><div class="profile-data"><label>Level</label><span>{{ player.level }}</span></div></div>
+                <div class="profile-item"><div class="profile-icon"><i class="fa fa-shirt"></i></div><div class="profile-data"><label>Current Team</label><span>{{ player.current_team }}</span></div></div>
+                <div class="profile-item"><div class="profile-icon"><i class="fa fa-history"></i></div><div class="profile-data"><label>Prev. VPL Team</label><span>{{ player.prev_team }}</span></div></div>
+            </div>
+
+            <div style="display:flex; gap:20px; margin-top:20px;">
+                <div class="stats-table-box">
+                    <div class="stats-header">VPL 2025 Stats</div>
+                    <table class="styled-table">
+                        <tr><th>Mat</th><th>Runs</th><th>Wkts</th><th>SR</th></tr>
+                        <tr><td>{{ player.vpl_mat }}</td><td>{{ player.vpl_runs }}</td><td>{{ player.vpl_wkts }}</td><td>{{ player.vpl_sr }}</td></tr>
+                    </table>
+                </div>
+                <div class="stats-table-box">
+                     <div class="stats-header">Overall Stats</div>
+                     <table class="styled-table">
+                        <tr><th>Mat</th><th>Runs</th><th>Wkts</th><th>Econ</th></tr>
+                        <tr><td>{{ player.or_mat }}</td><td>{{ player.or_runs }}</td><td>{{ player.or_wkts }}</td><td>{{ player.or_econ }}</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="projector-container" style="align-items:center; justify-content:center; flex-direction:column;">
+        <i class="fa fa-trophy" style="font-size: 5rem; color: #cbd5e1; margin-bottom: 20px;"></i>
+        <h1 style="color: #64748b;">Waiting for Auction Start...</h1>
+        {% if is_admin and control.status != 'Live' %}
+            <a href="{{ url_for('pick_random_player') }}" class="ctrl-btn btn-next" style="margin-top:20px;">
+                <i class="fa fa-play"></i> START ROUND 1
+            </a>
+        {% endif %}
+    </div>
+    {% endif %}
+	
+{% if is_admin %}
+<div class="dashboard-section">
+        <div class="dashboard-main-title">LIVE AUCTION DASHBOARD</div>
+        <div class="dashboard-grid">
+            
+            <div class="dash-card">
+                <h3>Purse Remaining</h3>
+                {% for t in teams %}
+                <div class="team-row">
+                    <span class="t-name">{{ t.name }}</span>
+                    <div class="progress-track">
+                        <div class="progress-fill fill-green" style="width: {{ t.purse_pct }}%;">₹{{ t.purse_rem }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="dash-card">
+                <h3>Slots Left</h3>
+                {% for t in teams %}
+                <div class="team-row">
+                    <span class="t-name">{{ t.name }}</span>
+                    <div class="progress-track">
+                        <div class="progress-fill fill-blue" style="width: {{ t.slots_pct }}%;">{{ t.slots_left }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="dash-card">
+                <h3>Max Bid Capacity</h3>
+                {% for t in teams %}
+                <div class="team-row">
+                    <span class="t-name">{{ t.name }}</span>
+                    <div class="progress-track">
+                        <div class="progress-fill fill-orange" style="width: {{ t.max_bid_pct }}%;">₹{{ t.max_bid }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+    </div>
+    {% endif %}
+
+
+    {% if is_captain %}
+    <div class="captain-wishlist-box">
+        <h3 style="margin:0; color:#b45309;"><i class="fa fa-star" style="color:var(--gold);"></i> MY WISHLIST TRACKER</h3>
+        <div style="max-height: 300px; overflow-y: auto;">
+            <table class="wish-table">
+                <thead><tr><th>Player Name</th><th>Role</th><th>Status</th></tr></thead>
+                <tbody>
+                    {% for p in my_wishlist_players %}
+                    <tr style="{% if p.id == player.id %}background:#fffbeb; border-left:3px solid var(--gold);{% endif %}">
+                        <td>{{ p.full_name }}</td>
+                        <td>{{ p.role }}</td>
+                        <td>
+                            {% if p.auction_status == 'Sold' %}<span class="status-badge badge-sold">SOLD ({{ p.team.name }})</span>
+                            {% elif p.auction_status == 'Unsold' %}<span class="status-badge badge-unsold">UNSOLD</span>
+                            {% else %}<span class="status-badge badge-pending">PENDING</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3">No wishlist players.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+<div class="player-list-container">
+    
+    <div class="list-header">
+        <h3 class="list-title" id="list-title-text">
+            <i class="fa fa-check-circle" style="color:#10b981;"></i> SOLD PLAYERS
+        </h3>
+        
+        <div class="toggle-wrapper">
+            <button onclick="switchTab('sold')" id="btn-sold" class="tab-btn sold-tab active">
+                SOLD
+            </button>
+            <button onclick="switchTab('unsold')" id="btn-unsold" class="tab-btn unsold-tab">
+                UNSOLD
+            </button>
+        </div>
+    </div>
+
+    <div id="sold-section" class="fade-in-section">
+        <table class="pro-table">
+            <thead>
+                <tr>
+                    <th>Player Name</th>
+                    <th>Role</th>
+                    <th>Team</th>
+                    <th>Price</th>
+                    {% if is_admin %}<th>Action</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in sold_players %}
+                <tr>
+                    <td class="col-name">{{ p.full_name }}</td>
+                    <td><span class="badge-role">{{ p.role }}</span></td>
+                    <td>
+                        <div class="col-team">
+                            <i class="fa fa-shirt"></i> {{ p.team.name if p.team else '--' }}
+                        </div>
+                    </td>
+                    <td class="col-price">₹{{ p.sold_price }}</td>
+                    
+                    {% if is_admin %}
+                    <td>
+                        <form action="{{ url_for('revert_last_sale') }}" method="POST" onsubmit="return confirm('Undo last sale?');" style="margin:0;">
+                            <input type="hidden" name="player_id" value="{{ p.id }}">
+                            <button type="submit" class="btn-undo-circle" title="Undo Sale">
+                                <i class="fa fa-undo"></i>
+                            </button>
+                        </form>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="empty-state">No players sold yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div id="unsold-section" class="fade-in-section" style="display: none;">
+        <table class="pro-table">
+            <thead>
+                <tr>
+                    <th>Player Name</th>
+                    <th>Role</th>
+                    <th>Phone</th>
+                    {% if is_admin %}<th>Action</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in unsold_players %}
+                <tr>
+                    <td class="col-name">{{ p.full_name }}</td>
+                    <td><span class="badge-role">{{ p.role }}</span></td>
+                    <td><span style="font-family:monospace; color:#64748b;">{{ p.phone }}</span></td>
+                    
+                    {% if is_admin %}
+                    <td>
+                        <form action="{{ url_for('revert_unsold') }}" method="POST" onsubmit="return confirm('Bring back to auction?');" style="margin:0;">
+                            <input type="hidden" name="player_id" value="{{ p.id }}">
+                            <button type="submit" class="btn-undo-circle" title="Revert Unsold">
+                                <i class="fa fa-undo"></i>
+                            </button>
+                        </form>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="empty-state">No unsold players.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+</div>
+
+{% if is_admin %}
+<div id="resetModal" class="modal">
+    <div class="modal-content">
+        <h3>⚠️ RESET AUCTION</h3>
+        <form action="{{ url_for('reset_auction') }}" method="POST">
+            <input type="password" name="admin_password" class="modal-input" placeholder="Admin Password" required>
+            <button type="submit" class="ctrl-btn btn-reset" style="width:100%; margin-top:10px;">CONFIRM</button>
+            <button type="button" onclick="closeModal()" class="btn-cancel">Cancel</button>
+        </form>
+    </div>
+</div>
+
+<div id="soldModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h3 class="modal-title">Finalize Sale</h3><p class="modal-subtitle">Assign this player to a team</p></div>
+        <form action="{{ url_for('finalize_sale') }}" method="POST">
+            {% if player %}
+            <input type="hidden" name="player_id" value="{{ player.id }}">
+            <div class="modal-form-group"><label class="modal-label">Buying Team</label>
+                <select name="team_id" class="modal-select" required>
+                    <option value="" disabled selected>Select Team...</option>
+                    {% for t in teams %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="modal-form-group"><label class="modal-label">Sold Price</label>
+                <input type="number" name="sold_price" value="200" class="modal-input" required placeholder="Enter Amount">
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn-confirm-sale"><i class="fa fa-check-circle"></i> Confirm Sale</button>
+                <button type="button" onclick="closeSoldModal()" class="btn-cancel">Cancel</button>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    function openModal() { document.getElementById('resetModal').style.display = 'block'; }
+    function closeModal() { document.getElementById('resetModal').style.display = 'none'; }
+    function openSoldModal() { document.getElementById('soldModal').style.display = 'block'; }
+    function closeSoldModal() { document.getElementById('soldModal').style.display = 'none'; }
+    
+    function showSection(type) {
+        document.getElementById('sold-section').style.display = 'none';
+        document.getElementById('unsold-section').style.display = 'none';
+        document.getElementById(type + '-section').style.display = 'block';
+    }
+    // ... keep your existing modal functions ...
+
+    function switchTab(type) {
+        // 1. Hide Both Sections
+        document.getElementById('sold-section').style.display = 'none';
+        document.getElementById('unsold-section').style.display = 'none';
+        
+        // 2. Reset Buttons
+        document.getElementById('btn-sold').classList.remove('active');
+        document.getElementById('btn-unsold').classList.remove('active');
+        
+        // 3. Show Selected & Activate Button
+        if (type === 'sold') {
+            document.getElementById('sold-section').style.display = 'block';
+            document.getElementById('btn-sold').classList.add('active');
+            
+            // Update Title
+            document.getElementById('list-title-text').innerHTML = 
+                '<i class="fa fa-check-circle" style="color:#10b981;"></i> SOLD PLAYERS';
+        } else {
+            document.getElementById('unsold-section').style.display = 'block';
+            document.getElementById('btn-unsold').classList.add('active');
+            
+            // Update Title
+            document.getElementById('list-title-text').innerHTML = 
+                '<i class="fa fa-times-circle" style="color:#ef4444;"></i> UNSOLD PLAYERS';
+        }
+    }
+</script>
+
+{% endblock %}

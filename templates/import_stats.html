@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5" style="max-width: 600px;">
+    <div class="card shadow border-0" style="border-radius: 20px; background: white; overflow: hidden;">
+        <div style="background: #001d2e; padding: 30px; text-align: center; color: white;">
+            <h3 style="font-family: 'Oswald'; margin: 0; text-transform: uppercase; letter-spacing: 2px;">Update Player Stats</h3>
+        </div>
+        
+        <div class="card-body p-5">
+            <form action="{{ url_for('import_stats') }}" method="POST" enctype="multipart/form-data">
+                <div style="margin-bottom: 25px;">
+                    <label style="font-weight: 700; color: #334155; display: block; margin-bottom: 10px;">Select Player Stats CSV File</label>
+                    <input type="file" name="file" class="form-control" accept=".csv" required style="border-radius: 10px; padding: 12px; border: 1px solid #e2e8f0;">
+                </div>
+                
+                <button type="submit" style="width: 100%; background: #00a6fb; color: white; border: none; padding: 16px; border-radius: 12px; font-weight: 800; font-size: 1rem; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 20px rgba(0, 166, 251, 0.2);">
+                    <i class="fa fa-upload me-2"></i> UPLOAD & SYNC DATA
+                </button>
+            </form>
+
+            <div style="margin-top: 30px; padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 10px; font-weight: 700;">
+                    <i class="fa fa-info-circle text-primary"></i> REQUIRED CSV HEADERS:
+                </p>
+                <code style="font-size: 0.75rem; color: #003554; display: block; word-break: break-all;">
+                    vpl_id, vpl_mat, vpl_runs, vpl_wkts, vpl_sr, or_mat, or_runs, or_wkts, or_sr
+                </code>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% block content %}
+
+{# --- 1. CONFIGURATION --- #}
+{% set MAX_PURSE = 10000 %} 
+{% set MAX_SLOTS = 15 %}
+{% set BASE_PRICE = 200 %}
+
+{# --- 2. CALCULATIONS --- #}
+{% set purse_remaining = MAX_PURSE - team.spent_amount %}
+{% set slots_filled = team.players|length %}
+{% set slots_remaining = MAX_SLOTS - slots_filled %}
+
+{# --- 3. MAX BID LOGIC --- #}
+{% if slots_remaining > 0 %}
+    {% set reserved_money = (slots_remaining - 1) * BASE_PRICE %}
+    {% set max_bid = purse_remaining - reserved_money %}
+    {% if max_bid > purse_remaining %}{% set max_bid = purse_remaining %}{% endif %}
+    {% if max_bid < 0 %}{% set max_bid = 0 %}{% endif %}
+{% else %}
+    {% set max_bid = 0 %}
+{% endif %}
+
+{# --- 4. PERMISSION LOGIC (FIXED) --- #}
+{# A. Check if Admin (Includes super_admin) #}
+{% set is_admin = current_user.is_authenticated and current_user.role in ['admin', 'super_admin'] %}
+
+{# B. Check if Captain of THIS Team (Compares Names directly) #}
+{% set is_my_team = current_user.is_authenticated and current_user.team == team.name %}
+
+{# C. Master Switch #}
+{% set show_private_details = is_admin or is_my_team %}
+
+
+<style>
+    :root {
+        --vpl-blue: #00a6fb;
+        --navy-deep: #001d2e;
+        --gold: #ffb703;
+        --green-price: #16a34a;
+        --danger: #ef4444;
+        --rtm-color: #ec4899;
+    }
+
+    body { background: #f8fafc; }
+
+    .detail-container { max-width: 1400px; margin: 40px auto; padding: 0 20px; }
+
+    /* --- NAVIGATION ROW --- */
+    .nav-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+    .back-btn { display: inline-flex; align-items: center; gap: 10px; color: var(--navy-deep); text-decoration: none; font-weight: 800; font-size: 1rem; }
+
+    .export-btn {
+        background-color: #107c41; color: white; padding: 10px 20px; border-radius: 8px; 
+        text-decoration: none; font-weight: 700; font-size: 0.9rem;
+        display: flex; align-items: center; gap: 8px;
+        box-shadow: 0 4px 10px rgba(16, 124, 65, 0.3); transition: 0.2s;
+    }
+    .export-btn:hover { background-color: #0c5e31; transform: translateY(-2px); }
+
+    /* --- TEAM HEADER --- */
+    .team-banner {
+        background: linear-gradient(135deg, var(--navy-deep) 0%, #003554 100%);
+        border-radius: 25px; padding: 40px; display: flex; align-items: center;
+        gap: 40px; color: white; margin-bottom: 50px; position: relative; overflow: hidden;
+        box-shadow: 0 15px 35px rgba(0, 29, 46, 0.2);
+    }
+    .banner-logo { width: 180px; height: 180px; background: white; border-radius: 20px; padding: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 20px rgba(0,0,0,0.2); flex-shrink: 0; }
+    .banner-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .banner-info { flex-grow: 1; }
+    .banner-info h1 { font-family: 'Oswald', sans-serif; font-size: 3.5rem; margin: 0 0 20px 0; text-transform: uppercase; }
+    
+    /* --- STATS GRID --- */
+    .banner-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; }
+    .stat-box { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); text-align: center; }
+    .stat-box.highlight { background: rgba(255, 183, 3, 0.15); border-color: var(--gold); }
+    .stat-box.rtm-box { background: rgba(236, 72, 153, 0.15); border-color: var(--rtm-color); }
+    .stat-label { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; margin-bottom: 5px; }
+    .stat-value { display: block; font-size: 1.4rem; font-weight: 800; font-family: 'Oswald', sans-serif; }
+
+    /* --- CARDS --- */
+    .role-section { margin-bottom: 60px; }
+    .role-header { font-family: 'Oswald', sans-serif; font-size: 1.8rem; color: var(--navy-deep); text-transform: uppercase; margin-bottom: 30px; display: flex; align-items: center; gap: 15px; border-left: 6px solid var(--vpl-blue); padding-left: 20px; }
+    .player-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 30px; }
+    .player-card { background: white; border-radius: 20px; overflow: hidden; border: 1px solid #e2e8f0; position: relative; transition: 0.3s; display: flex; flex-direction: column; }
+    .player-card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); border-color: var(--vpl-blue); }
+    .player-photo-box { width: 100%; height: 250px; background: #f1f5f9; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative; }
+    .player-photo-box img { width: 100%; height: 100%; object-fit: cover; }
+    .player-info { padding: 15px; text-align: center; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+    .player-info h3 { font-family: 'Oswald', sans-serif; font-size: 1.2rem; margin: 0 0 8px 0; color: var(--navy-deep); }
+    .price-badge { background-color: var(--green-price); color: white; padding: 6px 14px; border-radius: 50px; font-weight: 800; font-size: 1rem; display: inline-block; margin: 5px auto; box-shadow: 0 4px 6px rgba(22, 163, 74, 0.2); }
+    .player-role-tag { font-size: 0.75rem; font-weight: 800; color: var(--vpl-blue); text-transform: uppercase; margin-top: 8px; display: block; }
+    .captain-badge { position: absolute; top: 15px; right: 15px; background: var(--gold); color: var(--navy-deep); padding: 5px 15px; border-radius: 50px; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 10; }
+
+    @media (max-width: 768px) {
+        .team-banner { flex-direction: column; text-align: center; padding: 30px 20px; }
+        .banner-logo { width: 140px; height: 140px; }
+        .banner-stats-grid { grid-template-columns: 1fr 1fr; }
+        .nav-row { flex-direction: row; justify-content: space-between; }
+    }
+</style>
+
+<div class="detail-container">
+    
+    <div class="nav-row">
+        <a href="{{ url_for('teams') }}" class="back-btn">
+            <i class="fa fa-chevron-left"></i> Back to Teams
+        </a>
+        
+        {% if show_private_details %}
+        <a href="{{ url_for('export_team_excel', team_id=team.id) }}" class="export-btn">
+            <i class="fa fa-file-excel"></i> Export Roster
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="team-banner">
+        <div class="banner-logo">
+            <img src="{{ url_for('static', filename='uploads/' + team.logo) }}" alt="Logo">
+        </div>
+        <div class="banner-info">
+            <h1>{{ team.name }}</h1>
+            
+            <div class="banner-stats-grid">
+                
+                <div class="stat-box">
+                    <span class="stat-label">Slots Left</span>
+                    <span class="stat-value">{{ slots_remaining }} / {{ MAX_SLOTS }}</span>
+                </div>
+
+                {% if show_private_details %}
+                    <div class="stat-box">
+                        <span class="stat-label">Total Points</span>
+                        <span class="stat-value">{{ MAX_PURSE }}</span>
+                    </div>
+                    
+                    <div class="stat-box">
+                        <span class="stat-label">Remaining Pts</span>
+                        <span class="stat-value" style="color:var(--gold);">{{ purse_remaining }}</span>
+                    </div>
+
+                    <div class="stat-box rtm-box">
+                        <span class="stat-label">RTM Left</span>
+                        <span class="stat-value" style="color:var(--rtm-color);">{{ team.rtm_count }}</span>
+                    </div>
+
+                    <div class="stat-box highlight">
+                        <span class="stat-label">Max Bid Cap</span>
+                        <span class="stat-value">{{ max_bid }} Pts</span>
+                    </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+
+    <div class="role-section">
+        <div class="role-header"><i class="fa fa-crown" style="color:var(--gold);"></i> Team Captain</div>
+        <div class="player-grid">
+            {% set captains = [] %}
+            {% for player in team.players %}
+                {% if 'Captain' in player.role %}
+                    {% set _ = captains.append(player) %}
+                    <div class="player-card" style="border: 2px solid var(--gold);">
+                        <div class="captain-badge">Captain</div>
+                        <div class="player-photo-box">
+                            <img src="{{ url_for('static', filename='uploads/' + player.photo) }}" onerror="this.src='https://via.placeholder.com/300x400?text=No+Photo'">
+                        </div>
+                        <div class="player-info">
+                            <h3>{{ player.full_name }}</h3>
+                            
+                            {% if show_private_details %}
+                                <div class="price-badge">Sold: {{ player.sold_price|default(0) }}</div>
+                            {% endif %}
+                            
+                            <span class="player-role-tag">{{ player.role }}</span>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+            {% if captains|length == 0 %}
+                <div style="grid-column: 1 / -1; color:#94a3b8; font-style:italic;">Captain not yet assigned.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="role-section">
+        <div class="role-header"><i class="fa fa-bat-ball"></i> Batters</div>
+        <div class="player-grid">
+            {% for player in team.players %}
+                {% if 'Bat' in player.role and 'Captain' not in player.role %} 
+                <div class="player-card">
+                    <div class="player-photo-box">
+                        <img src="{{ url_for('static', filename='uploads/' + player.photo) }}" onerror="this.src='https://via.placeholder.com/300x400?text=No+Photo'">
+                    </div>
+                    <div class="player-info">
+                        <h3>{{ player.full_name }}</h3>
+                        {% if show_private_details %}
+                            <div class="price-badge">Sold: {{ player.sold_price|default(0) }}</div>
+                        {% endif %}
+                        <span class="player-role-tag">{{ player.role }}</span>
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="role-section">
+        <div class="role-header"><i class="fa fa-hand-fist"></i> All Rounders</div>
+        <div class="player-grid">
+            {% for player in team.players %}
+                {% if 'All' in player.role and 'Captain' not in player.role %} 
+                <div class="player-card">
+                    <div class="player-photo-box">
+                        <img src="{{ url_for('static', filename='uploads/' + player.photo) }}" onerror="this.src='https://via.placeholder.com/300x400?text=No+Photo'">
+                    </div>
+                    <div class="player-info">
+                        <h3>{{ player.full_name }}</h3>
+                        {% if show_private_details %}
+                            <div class="price-badge">Sold: {{ player.sold_price|default(0) }}</div>
+                        {% endif %}
+                        <span class="player-role-tag">{{ player.role }}</span>
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="role-section">
+        <div class="role-header"><i class="fa fa-mitten"></i> Wicket Keepers</div>
+        <div class="player-grid">
+            {% for player in team.players %}
+                {% if ('Keeper' in player.role or 'Wicket' in player.role) and 'Captain' not in player.role %} 
+                <div class="player-card">
+                    <div class="player-photo-box">
+                        <img src="{{ url_for('static', filename='uploads/' + player.photo) }}" onerror="this.src='https://via.placeholder.com/300x400?text=No+Photo'">
+                    </div>
+                    <div class="player-info">
+                        <h3>{{ player.full_name }}</h3>
+                        {% if show_private_details %}
+                            <div class="price-badge">Sold: {{ player.sold_price|default(0) }}</div>
+                        {% endif %}
+                        <span class="player-role-tag">{{ player.role }}</span>
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="role-section">
+        <div class="role-header"><i class="fa fa-baseball"></i> Bowlers</div>
+        <div class="player-grid">
+            {% for player in team.players %}
+                {% if 'Bowl' in player.role and 'Captain' not in player.role %} 
+                <div class="player-card">
+                    <div class="player-photo-box">
+                        <img src="{{ url_for('static', filename='uploads/' + player.photo) }}" onerror="this.src='https://via.placeholder.com/300x400?text=No+Photo'">
+                    </div>
+                    <div class="player-info">
+                        <h3>{{ player.full_name }}</h3>
+                        {% if show_private_details %}
+                            <div class="price-badge">Sold: {{ player.sold_price|default(0) }}</div>
+                        {% endif %}
+                        <span class="player-role-tag">{{ player.role }}</span>
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
